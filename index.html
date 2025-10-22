@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konnect Edge Challenge</title>
+    
+    <style>
+        /* --- Global Styles --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #ffffff;
+            padding: 20px 40px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px; /* Add gap for spacing */
+        }
+
+        header h1 {
+            margin: 0;
+            color: #1c1e21;
+            font-size: 24px; /* Adjust font size */
+        }
+
+        #challenge-stats {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        
+        #challenge-stats h3 {
+            margin: 5px 0 0 0; /* Updated margin */
+            font-weight: 500;
+            color: #555;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        footer {
+            text-align: center;
+            margin: 40px 0;
+            font-size: 14px;
+        }
+
+        footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Leaderboard Styles --- */
+        .team-card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .team-rank {
+            font-size: 24px;
+            font-weight: bold;
+            color: #888;
+            min-width: 40px;
+        }
+
+        .team-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 15px;
+            flex-grow: 1;
+        }
+
+        .team-earnings {
+            font-size: 22px;
+            font-weight: bold;
+            color: #111;
+        }
+
+        .progress-bar-container {
+            padding: 20px;
+            padding-top: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 20px;
+            border-radius: 10px;
+            transition: width 0.5s ease-out;
+        }
+
+        .medal-track {
+            position: relative;
+            height: 30px;
+            margin-top: -25px; /* Overlay on top of the bar */
+        }
+
+        .medal {
+            position: absolute;
+            transform: translateX(-50%); /* Center the icon */
+            font-size: 20px;
+            opacity: 0.3;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .medal.achieved {
+            opacity: 1;
+            transform: translateX(-50%) scale(1.2);
+        }
+
+        .loading, .error {
+            text-align: center;
+            font-size: 18px;
+            color: #777;
+            padding: 40px;
+        }
+        .error {
+            color: #d93025;
+        }
+
+        /* --- Countdown Timer Styles --- */
+        #countdown-timer {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 5px;
+            justify-content: flex-end;
+        }
+        .timer-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #eef2f8;
+            padding: 8px 12px;
+            border-radius: 6px;
+            min-width: 50px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .timer-box span {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0056b3;
+            line-height: 1.1;
+            font-family: monospace;
+        }
+
+        /* --- Admin Form Styles (Shared) --- */
+        form {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box; /* Important */
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        button[type="submit"]:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        #form-message {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+        #form-message.success { color: #28a745; }
+        #form-message.error { color: #d93025; }
+        #form-message.loading { color: #555; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>KONNECT EDGE INTER-CLUSTER MARATHON CHALLENGE</h1>
+        <div id="challenge-stats">
+            <div id="countdown-timer">
+                <div class="timer-box"><span id="cd-days">--</span>Days</div>
+                <div class="timer-box"><span id="cd-hours">--</span>Hours</div>
+                <div class="timer-box"><span id="cd-minutes">--</span>Mins</div>
+                <div class="timer-box"><span id="cd-seconds">--</span>Secs</div>
+            </div>
+            <h3>Goal: $5,000</h3>
+        </div>
+    </header>
+
+    <main id="leaderboard-container">
+        <div class="loading">Loading Leaderboard...</div>
+    </main>
+
+    <footer>
+        <a href="admin.html">Admin: Log Earnings</a>
+    </footer>
+
+    <script>
+        // --- CONFIGURATION ---
+        // ⚠️ PASTE YOUR GOOGLE SCRIPT URL HERE!
+        const WEB_APP_URL = 'PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE';
+        const GOAL_AMOUNT = 5000;
+        // Define the 4 medal milestones
+        const MEDAL_POINTS = [
+            { amount: 1250, icon: '🥉' }, // Bronze
+            { amount: 2500, icon: '🥈' }, // Silver
+            { amount: 3750, icon: '🥇' }, // Gold
+            { amount: 5000, icon: '🏆' }  // Trophy
+        ];
+
+        let timerInterval;
+
+        // --- FUNCTIONS ---
+
+        // Helper function to add leading zeros
+        function pad(num) {
+            return num < 10 ? '0' + num : num;
+        }
+
+        // Ticks the timer down every second
+        function startTimer(initialCountdown) {
+            let { days, hours, minutes, seconds } = initialCountdown;
+
+            const daysEl = document.getElementById('cd-days');
+            const hoursEl = document.getElementById('cd-hours');
+            const minutesEl = document.getElementById('cd-minutes');
+            const secondsEl = document.getElementById('cd-seconds');
+
+            function updateTimer() {
+                if (seconds > 0) {
+                    seconds--;
+                } else if (minutes > 0) {
+                    seconds = 59;
+                    minutes--;
+                } else if (hours > 0) {
+                    seconds = 59;
+                    minutes = 59;
+                    hours--;
+                } else if (days > 0) {
+                    seconds = 59;
+                    minutes = 59;
+                    hours = 23;
+                    days--;
+                } else {
+                    // Timer reached zero
+                    clearInterval(timerInterval);
+                }
+
+                daysEl.innerText = pad(days);
+                hoursEl.innerText = pad(hours);
+                minutesEl.innerText = pad(minutes);
+                secondsEl.innerText = pad(seconds);
+            }
+
+            // Update immediately, then start interval
+            updateTimer();
+            if (!initialCountdown.isFinished) {
+                timerInterval = setInterval(updateTimer, 1000);
+            }
+        }
+
+        async function fetchLeaderboard() {
+            const container = document.getElementById('leaderboard-container');
+            if (!WEB_APP_URL.includes('https://')) {
+                container.innerHTML = `<div class="error">Error: Please paste your Google Script URL into the WEB_APP_URL variable in the script.</div>`;
+                return;
+            }
+            try {
+                const response = await fetch(WEB_APP_URL);
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                // Start the countdown timer
+                if (data.countdown) {
+                    startTimer(data.countdown);
+                }
+
+                // Sort teams by earnings, highest first
+                data.teams.sort((a, b) => b.earnings - a.earnings);
+
+                // Clear loading message
+                container.innerHTML = '';
+
+                // Build the leaderboard
+                data.teams.forEach((team, index) => {
+                    const percentage = Math.min(100, (team.earnings / GOAL_AMOUNT) * 100);
+
+                    // Build medal points HTML
+                    let medalsHTML = '';
+                    MEDAL_POINTS.forEach(medal => {
+                        const achieved = team.earnings >= medal.amount;
+                        medalsHTML += `<div class="medal ${achieved ? 'achieved' : ''}" style="left: ${(medal.amount / GOAL_AMOUNT) * 100}%" title="$${medal.amount}">
+                            ${medal.icon}
+                        </div>`;
+                    });
+
+                    // Create the team card
+                    const teamCard = document.createElement('div');
+                    teamCard.className = 'team-card';
+                    teamCard.innerHTML = `
+                        <div class="team-header" style="border-bottom: 3px solid ${team.color};">
+                            <span class="team-rank">#${index + 1}</span>
+                            <span class="team-name">${team.name}</span>
+                            <span class="team-earnings">$${team.earnings.toLocaleString()}</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: ${percentage}%; background-color: ${team.color};"></div>
+                            <div class="medal-track">
+                                ${medalsHTML}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(teamCard);
+                });
+
+            } catch (error) {
+                container.innerHTML = `<div class="error">Failed to load leaderboard: ${error.message}</div>`;
+                console.error(error);
+            }
+        }
+
+        // --- INITIALIZE ---
+        document.addEventListener('DOMContentLoaded', fetchLeaderboard);
+    </script>
+</body>
+</html>

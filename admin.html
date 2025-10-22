@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Konnect Edge</title>
+    
+    <style>
+        /* --- Global Styles --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #ffffff;
+            padding: 20px 40px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px; /* Add gap for spacing */
+        }
+
+        header h1 {
+            margin: 0;
+            color: #1c1e21;
+            font-size: 24px; /* Adjust font size */
+        }
+        
+        /* Minimal header for admin */
+        #challenge-stats { display: none; }
+
+
+        main {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        footer {
+            text-align: center;
+            margin: 40px 0;
+            font-size: 14px;
+        }
+
+        footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Admin Form Styles (Shared) --- */
+        form {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box; /* Important */
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        button[type="submit"]:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        #form-message {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+        #form-message.success { color: #28a745; }
+        #form-message.error { color: #d93025; }
+        #form-message.loading { color: #555; }
+        
+        /* Hide unused elements on admin page */
+        #countdown-timer, .team-card, .loading, .error { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Admin: Konnect Edge Challenge</h1>
+    </header>
+
+    <main>
+        <form id="log-form">
+            <div class="form-group">
+                <label for="password">Admin Password</label>
+                <input type="password" id="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="teamName">Select Team</label>
+                <select id="teamName" required>
+                    <option value="">Loading teams...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="newEarnings">New Earnings to Add</label>
+                <input type="number" id="newEarnings" placeholder="e.g., 150" min="0" step="0.01" required>
+            </div>
+
+            <button type="submit" id="submit-btn">Submit Earnings</button>
+            <div id="form-message"></div>
+        </form>
+    </main>
+
+    <footer>
+        <a href="index.html">Back to Leaderboard</a>
+    </footer>
+
+    <script>
+        // --- CONFIGURATION ---
+        // ⚠️ PASTE YOUR GOOGLE SCRIPT URL HERE!
+        const WEB_APP_URL = 'PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE';
+
+        // --- FUNCTIONS ---
+
+        // Fetch team names to populate the dropdown
+        async function populateTeams() {
+            const teamSelect = document.getElementById('teamName');
+            if (!WEB_APP_URL.includes('https://')) {
+                teamSelect.innerHTML = '<option value="">Error: Please paste your Google Script URL</option>';
+                return;
+            }
+            try {
+                const response = await fetch(WEB_APP_URL); // GET request to fetch data
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                teamSelect.innerHTML = '<option value="">-- Select a Team --</option>'; // Clear loading
+                data.teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.name;
+                    option.textContent = team.name;
+                    teamSelect.appendChild(option);
+                });
+            } catch (error) {
+                teamSelect.innerHTML = `<option value="">Error loading teams</option>`;
+                console.error(error);
+            }
+        }
+
+        // Handle the form submission
+        async function handleFormSubmit(event) {
+            event.preventDefault(); // Stop page from reloading
+
+            const password = document.getElementById('password').value;
+            const teamName = document.getElementById('teamName').value;
+            const newEarnings = document.getElementById('newEarnings').value;
+            const messageEl = document.getElementById('form-message');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (!password || !teamName || !newEarnings) {
+                messageEl.textContent = 'Please fill out all fields.';
+                messageEl.className = 'error';
+                return;
+            }
+
+            // Show loading state
+            messageEl.textContent = 'Submitting...';
+            messageEl.className = 'loading';
+            submitBtn.disabled = true;
+
+            try {
+                const payload = {
+                    password: password,
+                    teamName: teamName,
+                    newEarnings: parseFloat(newEarnings)
+                };
+
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    redirect: 'follow', // Important for GAS
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // We need to parse the JSON response from the script
+                const result = await response.json();
+
+                if (result.success) {
+                    messageEl.textContent = result.message;
+                    messageEl.className = 'success';
+                    // Clear the form
+                    document.getElementById('log-form').reset();
+                } else {
+                    throw new Error(result.error || 'Unknown error occurred.');
+                }
+
+            } catch (error) {
+                messageEl.textContent = `Error: ${error.message}`;
+                messageEl.className = 'error';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        // --- INITIALIZE ---
+        document.addEventListener('DOMContentLoaded', () => {
+            populateTeams();
+            document.getElementById('log-form').addEventListener('submit', handleFormSubmit);
+        });
+    </script>
+</body>
+</html>
