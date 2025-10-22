@@ -218,9 +218,6 @@
                     mode: 'cors',
                     redirect: 'follow', // Important for GAS
                     body: JSON.stringify(payload),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
                 });
                 
                 // We need to parse the JSON response from the script
@@ -252,6 +249,7 @@
 </body>
 
 </html>
+
 
 
 
